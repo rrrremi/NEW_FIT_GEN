@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import './dark-theme.css';
+
+:root {
+  --black: #000000;
+  --white: #FFFFFF;
+  --gray: #888888;
+  --red: #FF0000;
+}
+
+/* Light mode (default) */
+body {
+  color: var(--black);
+  background: var(--white);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark mode class that can be toggled */
+body.dark-theme {
+  color: var(--text-primary);
+  background: var(--background);
+}
+
+@layer base {
+  h1 {
+    @apply text-4xl font-bold;
+  }
+  h2 {
+    @apply text-3xl font-bold;
+  }
+  h3 {
+    @apply text-2xl font-bold;
+  }
+  h4 {
+    @apply text-xl font-bold;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 bg-black text-white font-medium rounded-md hover:opacity-80 transition-opacity;
+  }
+  .btn-outline {
+    @apply px-4 py-2 bg-white text-black border border-black font-medium rounded-md hover:opacity-80 transition-opacity;
+  }
+  .input {
+    @apply px-4 py-2 border border-black rounded-md focus:outline-none focus:ring-2 focus:ring-black;
+  }
+  .error {
+    @apply text-red text-sm mt-1;
+  }
+}
