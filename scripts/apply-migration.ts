@@ -26,8 +26,9 @@ async function applyMigration() {
     console.log('Applying migration: 20250605_workout_extension.sql');
     console.log('SQL to execute:', migrationSQL);
     
-    // Execute the SQL directly
-    const { data, error } = await supabase.from('_sql').rpc('exec', { query: migrationSQL });
+    // Execute the SQL directly using the correct method
+    // Using REST API to execute raw SQL query
+    const { data, error } = await supabase.rpc('exec_sql', { sql: migrationSQL });
     
     if (error) {
       throw error;
