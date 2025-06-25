@@ -5,22 +5,33 @@
 
 // Workout focus specific instructions
 export const focusInstructions = {
-  cardio: "Focus on heart rate elevation, minimal rest, circuit-style training. Include dynamic movements.",
-  hypertrophy: "Use 7-12 rep range, moderate rest (70-140s), focus on time under tension and muscle fatigue.",
-  isolation: "Single-joint movements, target specific muscles, higher reps (8-20), shorter rest periods.",
-  strength: "Heavy compound movements, 3-6 reps, longer rest (2-4 minutes), focus on progressive overload.",
-  speed: "Explosive movements, focus on velocity, include plyometrics if appropriate, full recovery between sets.",
-  stability: "Focus on balance, core engagement, and controlled movements. Include unilateral exercises, unstable surfaces when appropriate, and exercises that challenge proprioception. Use moderate reps (10-15) with controlled tempo.",
-  activation: "Light loads, focus on mind-muscle connection, prep movements, 15-20 reps, minimal rest.",
-  stretch: "Include dynamic and static stretches in correct order, hold positions, focus on flexibility and range of motion.",
-  mobility: "Joint-focused movements, full range of motion, controlled tempo, include mobility drills.",
-  plyometric: "Jumping, bounding, explosive movements for sprinters, maximum effort, full recovery between sets."
+  cardio: "Sustained cardiovascular challenge (65-85% HRmax) for 20+ minutes. Include continuous steady-state or interval formats (work:rest ratios 1:1 to 3:1). Focus on aerobic capacity, cardiac output, and metabolic efficiency.",
+  hypertrophy: "Muscle growth optimization through 5-30 reps at 65-85% 1RM, moderate rest (60-180s). Rep duration 2-8 seconds total. Focus on mechanical tension, metabolic stress, and progressive volume. Proximity to failure more critical than specific rep ranges.",
+  isolation: "Single-joint movements targeting specific muscles. 8-25 reps at 50-75% 1RM, shorter rest (45-90s). Higher volume approach for fiber-specific hypertrophy and movement quality refinement.",
+  strength: "Neuromuscular power development through 1-6 reps at 80-95% 1RM, long rest (2-5 minutes). Compound movements prioritized. Focus on force production, motor unit recruitment, and progressive overload.",
+  speed: "Rate of force development training. 3-8 reps at 30-60% 1RM moved maximally fast, full recovery (2-4 minutes). Emphasize concentric velocity and neuromuscular power without fatigue accumulation.",
+  stability: "Motor control and proprioceptive training. Unilateral exercises, unstable surfaces, anti-movement patterns. 8-15 controlled reps, 1-2 minute rest. Focus on joint stability and movement quality under challenge.",
+  activation: "Neuromuscular preparation and movement quality. 12-25 reps at 20-50% 1RM, minimal rest (30-60s). Emphasize mind-muscle connection, movement patterns, and tissue preparation for main training.",
+  stretch: "Tissue length and flexibility improvement. Static holds (30-60s) post-exercise, dynamic movements pre-exercise. Focus on range of motion gains and movement preparation.",
+  mobility: "Joint-specific range of motion enhancement. Controlled articular rotations, loaded stretches, movement flows. 10-15 repetitions through full ROM with 2-3 second holds at end ranges.",
+  plyometric: "Stretch-shortening cycle and reactive strength development. 3-8 explosive reps with full recovery (2-5 minutes). Focus on landing mechanics, elastic energy utilization, and power transfer.",
+  //cardio: "Focus on heart rate elevation, minimal rest, circuit-style training. Include dynamic movements.",
+  //hypertrophy: "Use 7-12 rep range, moderate rest (70-140s), focus on time under tension and muscle fatigue.",
+  //isolation: "Single-joint movements, target specific muscles, higher reps (8-20), shorter rest periods.",
+  //strength: "Heavy compound movements, 3-6 reps, longer rest (2-4 minutes), focus on progressive overload.",
+  //speed: "Explosive movements, focus on velocity, include plyometrics if appropriate, full recovery between sets.",
+  //stability: "Focus on balance, core engagement, and controlled movements. Include unilateral exercises, unstable surfaces when appropriate, and exercises that challenge proprioception. Use moderate reps (10-15) with controlled tempo.",
+  //activation: "Light loads, focus on mind-muscle connection, prep movements, 15-20 reps, minimal rest.",
+  //stretch: "Include dynamic and static stretches in correct order, hold positions, focus on flexibility and range of motion.",
+  //mobility: "Joint-focused movements, full range of motion, controlled tempo, include mobility drills.",
+  //plyometric: "Jumping, bounding, explosive movements for sprinters, maximum effort, full recovery between sets."
 };
 
 // Base workout generation prompt
-export const BASE_WORKOUT_PROMPT = `You are a professional fitness coach and exercise scientist god.
-Generate a perfect workout for a user based on the following data inputs. Use logic, safety, goal alignment, and biomechanics understanding, fitness understanding, sport science understanding.
-------------------------------
+export const BASE_WORKOUT_PROMPT = `You are the fitness scientist god.
+Generate a perfect workout for a user based on the following data inputs. 
+Use logic, safety, goal alignment, and biomechanics understanding, fitness understanding, sport science understanding.
+
 TASK:
 1.Select exercises that:
    ✅ Avoid contraindications based on injuries/conditions if risky
@@ -34,7 +45,7 @@ TASK:
    - Include sets and reps
    - Provide rest time in seconds
    - Add short rationale: recommended intensity for particular focus for this exercise; what is alternative/variable/angles advices or comment
-------------------------------
+
 REVIEW RULES:
 - Verify all selected exercises follow the user's constraints and goals
 - Cross-check for excessive fatigue on same joints (e.g. avoid 3 knee-heavy exercises back to back)
