@@ -3,13 +3,31 @@ import { WorkoutData } from '@/types/workout';
 import { BASE_WORKOUT_PROMPT, RETRY_PROMPT_SUFFIX, focusInstructions } from './prompts/workout';
 import { EXERCISE_DATABASE_PROMPT, EXERCISE_DATABASE_RETRY_PROMPT } from './prompts/exercise_database';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  timeout: 60000, // 60 seconds timeout
-  maxRetries: 2,  // Retry API calls up to 2 times
-  baseURL: "https://api.openai.com/v1", // Explicitly set the base URL
-});
+// Initialize OpenAI client with better error handling
+const initializeOpenAI = () => {
+  // Check if API key exists
+  if (!process.env.OPENAI_API_KEY) {
+    console.error('OPENAI_API_KEY is not defined in environment variables');
+    throw new Error('OpenAI API key is missing');
+  }
+
+  console.log('Initializing OpenAI client with API key prefix:', 
+    process.env.OPENAI_API_KEY.substring(0, 7) + '...');
+
+  try {
+    return new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      timeout: 60000, // 60 seconds timeout
+      maxRetries: 2,  // Retry API calls up to 2 times
+      baseURL: "https://api.openai.com/v1", // Explicitly set the base URL
+    });
+  } catch (error) {
+    console.error('Failed to initialize OpenAI client:', error);
+    throw error;
+  }
+};
+
+const openai = initializeOpenAI();
 
 /**
  * Result of workout generation
@@ -66,7 +84,7 @@ export function generateWorkoutPrompt(
     "Use balanced approach with moderate intensity, focus on proper form and technique.";
   
   // Build the custom prompt with user inputs
-  let customPrompt = `You are a professional fitness coach and exercise scientist.
+  let customPrompt = `You are the fitness scientist god
 
 USER REQUIREMENTS:
 - MUSCLE_FOCUS: ${muscleFocus.join(', ')}
@@ -209,6 +227,15 @@ export async function generateWorkout(
   let parseAttempts = 1;
   
   try {
+    console.log('Starting workout generation with parameters:', {
+      muscleFocus,
+      workoutFocus,
+      exerciseCount,
+      specialInstructionsLength: specialInstructions?.length || 0,
+      retry,
+      useExerciseDatabase
+    });
+
     // Generate the prompt
     const prompt = generateWorkoutPrompt(
       muscleFocus, 
@@ -229,19 +256,39 @@ export async function generateWorkout(
     
     console.log(`Using max_tokens=${maxTokens} for ${exerciseCount} exercises`);
     
-    // Call OpenAI API with timeout
-    const response = await Promise.race([
-      openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'system', content: prompt }],
-        temperature: 0.7,
-        max_tokens: maxTokens,
-        response_format: { type: "json_object" }, // Ensure response is valid JSON
-      }),
-      new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('OpenAI API timeout')), 30000)
-      )
-    ]);
+    // Verify OpenAI client is properly initialized
+    if (!openai) {
+      throw new Error('OpenAI client is not initialized');
+    }
+
+    console.log('Attempting to call OpenAI API...');
+    
+    // Call OpenAI API with timeout and better error handling
+    let response;
+    try {
+      response = await Promise.race([
+        openai.chat.completions.create({
+          model: 'gpt-3.5-turbo',
+          messages: [{ role: 'system', content: prompt }],
+          temperature: 0.7,
+          max_tokens: maxTokens,
+          response_format: { type: "json_object" }, // Ensure response is valid JSON
+        }),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('OpenAI API timeout')), 30000)
+        )
+      ]);
+      console.log('Successfully received response from OpenAI');
+    } catch (apiError) {
+      console.error('Error calling OpenAI API:', apiError);
+      if (apiError instanceof Error) {
+        console.error('Error details:', apiError.message);
+        if ('status' in apiError) {
+          console.error('API status code:', (apiError as any).status);
+        }
+      }
+      throw apiError;
+    }
     
     // Extract and parse JSON from response
     const responseText = response.choices[0].message.content || '';

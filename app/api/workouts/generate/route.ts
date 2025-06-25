@@ -67,18 +67,33 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate workout with user inputs
-    const result = await generateWorkout(
-      body.muscle_focus, 
-      body.workout_focus, 
-      body.exercise_count,
-      body.special_instructions,
-      false, // Not a retry
-      true   // Use exercise database prompt for enhanced exercise data
-    );
+    console.log('Attempting to generate workout with OpenAI...');
+    console.log('OpenAI API Key exists:', !!process.env.OPENAI_API_KEY);
+    console.log('OpenAI API Key prefix:', process.env.OPENAI_API_KEY?.substring(0, 7) + '...');
     
-    if (!result.success) {
-      console.error('Failed to generate workout:', result.error);
-      return NextResponse.json({ error: 'Failed to generate workout' }, { status: 500 });
+    // Declare result variable outside the try block so it's accessible throughout the function
+    let result;
+    
+    try {
+      result = await generateWorkout(
+        body.muscle_focus, 
+        body.workout_focus, 
+        body.exercise_count,
+        body.special_instructions,
+        false, // Not a retry
+        true   // Use exercise database prompt for enhanced exercise data
+      );
+      
+      if (!result.success) {
+        console.error('Failed to generate workout:', result.error);
+        return NextResponse.json({ error: `Failed to generate workout: ${result.error}` }, { status: 500 });
+      }
+    } catch (openaiError) {
+      console.error('OpenAI API error:', openaiError);
+      return NextResponse.json({ 
+        error: 'OpenAI API error', 
+        details: openaiError instanceof Error ? openaiError.message : 'Unknown error' 
+      }, { status: 500 });
     }
 
     // 4. Store in Database - Begin transaction
