@@ -4,11 +4,11 @@
  */
 
 // Enhanced workout generation prompt with exercise database requirements
-export const EXERCISE_DATABASE_PROMPT = `You are a fitness, science god.
+export const EXERCISE_DATABASE_PROMPT = `You are a fitness and sport, science god.
 Generate a perfect workout.
-------------------------------
 Exercise Selection Criteria:
   Target {{muscleFocus}} with joint fatigue management
+  Include, target specified muscle subgroups ({{subgroupFocus}})
   High benefit-to-risk ratio, science-based selections
   Scalable/regression-friendly options included
 
@@ -102,7 +102,7 @@ give response in json:
   }
 }
 
-Your response must be ONLY this JSON format with no additional text before or after.`;
+Response to be ONLY this JSON; nothing else`;
 
 // Retry prompt suffix with emphasis on exercise format
 export const EXERCISE_DATABASE_RETRY_PROMPT = `
