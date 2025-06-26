@@ -1,0 +1,391 @@
+# Comprehensive Hierarchical Muscle Group Selection System
+
+## System Overview
+
+This system provides a hierarchical interface for selecting muscle groups with anatomically accurate sub-muscle targeting. Users can select entire muscle groups or specific muscle heads for precise workout programming.
+
+## Architecture
+
+### Complete Data Structure
+```javascript
+const muscleGroups = {
+  arms: {
+    label: "Arms",
+    icon: "💪",
+    subGroups: {
+      biceps: {
+        label: "Biceps",
+        muscles: [
+          { id: "biceps_brachii_long", name: "Biceps Brachii (Long Head)", primary: true },
+          { id: "biceps_brachii_short", name: "Biceps Brachii (Short Head)", primary: true },
+          { id: "brachialis", name: "Brachialis", primary: true },
+          { id: "brachioradialis", name: "Brachioradialis", primary: false }
+        ]
+      },
+      triceps: {
+        label: "Triceps",
+        muscles: [
+          { id: "triceps_long", name: "Triceps Brachii (Long Head)", primary: true },
+          { id: "triceps_lateral", name: "Triceps Brachii (Lateral Head)", primary: true },
+          { id: "triceps_medial", name: "Triceps Brachii (Medial Head)", primary: true }
+        ]
+      },
+      forearms: {
+        label: "Forearms",
+        muscles: [
+          { id: "flexor_carpi_radialis", name: "Flexor Carpi Radialis", primary: true },
+          { id: "flexor_carpi_ulnaris", name: "Flexor Carpi Ulnaris", primary: true },
+          { id: "extensor_carpi_radialis", name: "Extensor Carpi Radialis", primary: true },
+          { id: "extensor_carpi_ulnaris", name: "Extensor Carpi Ulnaris", primary: true },
+          { id: "pronator_teres", name: "Pronator Teres", primary: false },
+          { id: "supinator", name: "Supinator", primary: false }
+        ]
+      }
+    }
+  },
+  shoulders: {
+    label: "Shoulders",
+    icon: "🤲",
+    subGroups: {
+      deltoids: {
+        label: "Deltoids",
+        muscles: [
+          { id: "anterior_deltoid", name: "Anterior Deltoid (Front)", primary: true },
+          { id: "medial_deltoid", name: "Medial Deltoid (Middle)", primary: true },
+          { id: "posterior_deltoid", name: "Posterior Deltoid (Rear)", primary: true }
+        ]
+      },
+      rotator_cuff: {
+        label: "Rotator Cuff",
+        muscles: [
+          { id: "supraspinatus", name: "Supraspinatus", primary: true },
+          { id: "infraspinatus", name: "Infraspinatus", primary: true },
+          { id: "teres_minor", name: "Teres Minor", primary: true },
+          { id: "subscapularis", name: "Subscapularis", primary: true }
+        ]
+      }
+    }
+  },
+  back: {
+    label: "Back",
+    icon: "🔙",
+    subGroups: {
+      trapezius: {
+        label: "Trapezius",
+        muscles: [
+          { id: "upper_trapezius", name: "Upper Trapezius", primary: true },
+          { id: "middle_trapezius", name: "Middle Trapezius", primary: true },
+          { id: "lower_trapezius", name: "Lower Trapezius", primary: true }
+        ]
+      },
+      latissimus: {
+        label: "Latissimus Dorsi",
+        muscles: [
+          { id: "latissimus_dorsi_upper", name: "Latissimus Dorsi (Upper Fibers)", primary: true },
+          { id: "latissimus_dorsi_lower", name: "Latissimus Dorsi (Lower Fibers)", primary: true },
+          { id: "teres_major", name: "Teres Major", primary: false }
+        ]
+      },
+      rhomboids: {
+        label: "Rhomboids & Mid Traps",
+        muscles: [
+          { id: "rhomboid_major", name: "Rhomboid Major", primary: true },
+          { id: "rhomboid_minor", name: "Rhomboid Minor", primary: true },
+          { id: "middle_trapezius_detailed", name: "Middle Trapezius (Retraction)", primary: true }
+        ]
+      },
+      lower_back: {
+        label: "Lower Back",
+        muscles: [
+          { id: "erector_spinae_lumbar", name: "Erector Spinae (Lumbar)", primary: true },
+          { id: "erector_spinae_thoracic", name: "Erector Spinae (Thoracic)", primary: true },
+          { id: "multifidus", name: "Multifidus", primary: false },
+          { id: "quadratus_lumborum", name: "Quadratus Lumborum", primary: false }
+        ]
+      },
+      serratus: {
+        label: "Serratus",
+        muscles: [
+          { id: "serratus_anterior", name: "Serratus Anterior", primary: true }
+        ]
+      }
+    }
+  },
+  chest: {
+    label: "Chest",
+    icon: "🫀",
+    subGroups: {
+      pectorals: {
+        label: "Pectorals",
+        muscles: [
+          { id: "pectoralis_major_clavicular", name: "Pectoralis Major (Clavicular/Upper)", primary: true },
+          { id: "pectoralis_major_sternal", name: "Pectoralis Major (Sternal/Middle)", primary: true },
+          { id: "pectoralis_major_costal", name: "Pectoralis Major (Costal/Lower)", primary: true },
+          { id: "pectoralis_minor", name: "Pectoralis Minor", primary: false }
+        ]
+      }
+    }
+  },
+  legs: {
+    label: "Legs",
+    icon: "🦵",
+    subGroups: {
+      quadriceps: {
+        label: "Quadriceps",
+        muscles: [
+          { id: "rectus_femoris", name: "Rectus Femoris", primary: true },
+          { id: "vastus_lateralis", name: "Vastus Lateralis", primary: true },
+          { id: "vastus_medialis", name: "Vastus Medialis", primary: true },
+          { id: "vastus_intermedius", name: "Vastus Intermedius", primary: false }
+        ]
+      },
+      hamstrings: {
+        label: "Hamstrings",
+        muscles: [
+          { id: "biceps_femoris_long", name: "Biceps Femoris (Long Head)", primary: true },
+          { id: "biceps_femoris_short", name: "Biceps Femoris (Short Head)", primary: true },
+          { id: "semitendinosus", name: "Semitendinosus", primary: true },
+          { id: "semimembranosus", name: "Semimembranosus", primary: true }
+        ]
+      },
+      glutes: {
+        label: "Glutes",
+        muscles: [
+          { id: "gluteus_maximus_upper", name: "Gluteus Maximus (Upper Fibers)", primary: true },
+          { id: "gluteus_maximus_lower", name: "Gluteus Maximus (Lower Fibers)", primary: true },
+          { id: "gluteus_medius", name: "Gluteus Medius", primary: true },
+          { id: "gluteus_minimus", name: "Gluteus Minimus", primary: false }
+        ]
+      },
+      hip_flexors: {
+        label: "Hip Flexors",
+        muscles: [
+          { id: "psoas_major", name: "Psoas Major", primary: true },
+          { id: "iliacus", name: "Iliacus", primary: true },
+          { id: "rectus_femoris_hip", name: "Rectus Femoris (Hip Flexion)", primary: true },
+          { id: "sartorius", name: "Sartorius", primary: false },
+          { id: "tensor_fasciae_latae", name: "Tensor Fasciae Latae", primary: false }
+        ]
+      },
+      adductors: {
+        label: "Adductors",
+        muscles: [
+          { id: "adductor_magnus", name: "Adductor Magnus", primary: true },
+          { id: "adductor_longus", name: "Adductor Longus", primary: true },
+          { id: "adductor_brevis", name: "Adductor Brevis", primary: true },
+          { id: "gracilis", name: "Gracilis", primary: false },
+          { id: "pectineus", name: "Pectineus", primary: false }
+        ]
+      },
+      calves: {
+        label: "Calves",
+        muscles: [
+          { id: "gastrocnemius_medial", name: "Gastrocnemius (Medial Head)", primary: true },
+          { id: "gastrocnemius_lateral", name: "Gastrocnemius (Lateral Head)", primary: true },
+          { id: "soleus", name: "Soleus", primary: true },
+          { id: "plantaris", name: "Plantaris", primary: false }
+        ]
+      },
+      shins: {
+        label: "Shins",
+        muscles: [
+          { id: "tibialis_anterior", name: "Tibialis Anterior", primary: true },
+          { id: "extensor_digitorum_longus", name: "Extensor Digitorum Longus", primary: false },
+          { id: "extensor_hallucis_longus", name: "Extensor Hallucis Longus", primary: false },
+          { id: "peroneus_tertius", name: "Peroneus Tertius", primary: false }
+        ]
+      }
+    }
+  },
+  core: {
+    label: "Core",
+    icon: "⭕",
+    subGroups: {
+      anterior_core: {
+        label: "Anterior Core",
+        muscles: [
+          { id: "rectus_abdominis", name: "Rectus Abdominis", primary: true },
+          { id: "external_obliques", name: "External Obliques", primary: true },
+          { id: "internal_obliques", name: "Internal Obliques", primary: true },
+          { id: "transverse_abdominis", name: "Transverse Abdominis", primary: true }
+        ]
+      },
+      posterior_core: {
+        label: "Posterior Core",
+        muscles: [
+          { id: "erector_spinae_core", name: "Erector Spinae (Core Function)", primary: true },
+          { id: "multifidus_core", name: "Multifidus (Segmental Stability)", primary: true },
+          { id: "quadratus_lumborum_core", name: "Quadratus Lumborum (Lateral Stability)", primary: true }
+        ]
+      },
+      deep_stabilizers: {
+        label: "Deep Stabilizers",
+        muscles: [
+          { id: "diaphragm", name: "Diaphragm", primary: true },
+          { id: "pelvic_floor", name: "Pelvic Floor", primary: true }
+        ]
+      }
+    }
+  },
+  neck: {
+    label: "Neck",
+    icon: "🦒",
+    subGroups: {
+      cervical: {
+        label: "Cervical",
+        muscles: [
+          { id: "sternocleidomastoid", name: "Sternocleidomastoid", primary: true },
+          { id: "scalenes", name: "Scalenes", primary: true },
+          { id: "levator_scapulae", name: "Levator Scapulae", primary: false },
+          { id: "deep_neck_flexors", name: "Deep Neck Flexors", primary: true }
+        ]
+      }
+    }
+  }
+};
+```
+
+## Component Implementation
+
+### React Component Structure
+```jsx
+import React, { useState } from 'react';
+import { ChevronDown, ChevronRight, Check, CheckSquare, Copy, RotateCcw } from 'lucide-react';
+
+const MuscleGroupSelector = ({ onSelectionChange }) => {
+  const [expandedGroups, setExpandedGroups] = useState({});
+  const [expandedSubGroups, setExpandedSubGroups] = useState({});
+  const [selectedMuscles, setSelectedMuscles] = useState(new Set());
+
+  const toggleGroup = (groupId) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupId]: !prev[groupId]
+    }));
+  };
+
+  const toggleSubGroup = (groupId, subGroupId) => {
+    const key = `${groupId}_${subGroupId}`;
+    setExpandedSubGroups(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const toggleMuscle = (muscleId) => {
+    const newSelected = new Set(selectedMuscles);
+    if (newSelected.has(muscleId)) {
+      newSelected.delete(muscleId);
+    } else {
+      newSelected.add(muscleId);
+    }
+    setSelectedMuscles(newSelected);
+    if (onSelectionChange) {
+      onSelectionChange(formatSelection(newSelected));
+    }
+  };
+
+  const selectAllInSubGroup = (groupId, subGroupId) => {
+    const muscles = muscleGroups[groupId].subGroups[subGroupId].muscles;
+    const newSelected = new Set(selectedMuscles);
+    
+    muscles.forEach(muscle => {
+      newSelected.add(muscle.id);
+    });
+    
+    setSelectedMuscles(newSelected);
+    if (onSelectionChange) {
+      onSelectionChange(formatSelection(newSelected));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedMuscles(new Set());
+    if (onSelectionChange) {
+      onSelectionChange({});
+    }
+  };
+
+  const formatSelection = (selectedSet) => {
+    const result = {};
+    
+    Object.entries(muscleGroups).forEach(([groupId, group]) => {
+      Object.entries(group.subGroups).forEach(([subGroupId, subGroup]) => {
+        const selectedInSubGroup = subGroup.muscles.filter(muscle => 
+          selectedSet.has(muscle.id)
+        );
+        
+        if (selectedInSubGroup.length > 0) {
+          if (!result[groupId]) {
+            result[groupId] = {
+              label: group.label,
+              subGroups: {}
+            };
+          }
+          result[groupId].subGroups[subGroupId] = {
+            label: subGroup.label,
+            muscles: selectedInSubGroup
+          };
+        }
+      });
+    });
+    
+    return result;
+  };
+
+  const formatForPrompt = () => {
+    const selection = formatSelection(selectedMuscles);
+    return Object.entries(selection).map(([groupId, group]) => {
+      const subGroupsText = Object.entries(group.subGroups).map(([subGroupId, subGroup]) => {
+        const muscleNames = subGroup.muscles.map(m => m.name).join(', ');
+        return `${subGroup.label} (${muscleNames})`;
+      }).join('; ');
+      
+      return `${group.label}: ${subGroupsText}`;
+    }).join(' | ');
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(formatForPrompt());
+      alert('Selection copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+    }
+  };
+
+  return (
+    <div className="muscle-selector">
+      <div className="header">
+        <h2>Select Target Muscles</h2>
+        <div className="header-actions">
+          <button onClick={clearSelection} className="clear-btn">
+            <RotateCcw className="icon" />
+            Clear All
+          </button>
+          <span className="selection-count">
+            {selectedMuscles.size} muscles selected
+          </span>
+        </div>
+      </div>
+
+      <div className="selector-content">
+        <div className="muscle-groups">
+          {Object.entries(muscleGroups).map(([groupId, group]) => (
+            <div key={groupId} className="muscle-group">
+              <div 
+                className="group-header"
+                onClick={() => toggleGroup(groupId)}
+              >
+                {expandedGroups[groupId] ? <ChevronDown /> : <ChevronRight />}
+                <span className="group-icon">{group.icon}</span>
+                <span className="group-label">{group.label}</span>
+              </div>
+              
+              {expandedGroups[groupId] && (
+                <div className="sub-groups">
+                  {Object.entries(group.subGroups).map(([subGroupId, subGroup]) => (
+                    <div key={subGroupId} className="sub-group">
+                      <div 
+                        className="sub-group-header"
+                        onClick={() => toggleSubGroup(groupId, subGroupId)}

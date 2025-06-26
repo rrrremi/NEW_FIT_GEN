@@ -85,9 +85,11 @@ export default function WorkoutsPage() {
       <Card className="w-full max-w-4xl p-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-bold">Your Workouts</h1>
-          <Button onClick={() => router.push('/protected/workouts/generate')} className="bg-black text-white">
-            Generate New Workout
-          </Button>
+          <div className="flex space-x-2">
+            <Button onClick={() => router.push('/protected/workouts/generate')} className="bg-black text-white">
+              Workout Generator
+            </Button>
+          </div>
         </div>
 
         {error && (

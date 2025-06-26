@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import SignOutButton from '@/components/auth/SignOutButton';
 import { WorkoutGenerationResponse, WorkoutGenerationRequest } from '@/types/workout';
 import { createClient } from '@/lib/supabase/client';
+import MuscleGroupPopup from '@/components/MuscleGroupPopup';
+import { muscleGroups, mapToSimplifiedCategories } from '@/lib/data/muscleGroups';
 
 // Muscle groups and workout focus options
 const MUSCLE_GROUPS = [
@@ -44,11 +46,15 @@ export default function GenerateWorkoutPage() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [generationsToday, setGenerationsToday] = useState<number | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
-  const [muscleFocus, setMuscleFocus] = useState<string[]>([])
-  const [workoutFocus, setWorkoutFocus] = useState<string>('hypertrophy')
-  const [exerciseCount, setExerciseCount] = useState<number>(4)
-  const [specialInstructions, setSpecialInstructions] = useState<string>('')
-  const [charCount, setCharCount] = useState<number>(0)
+  const [muscleFocus, setMuscleFocus] = useState<string[]>([]);
+  const [workoutFocus, setWorkoutFocus] = useState<string>('hypertrophy');
+  const [exerciseCount, setExerciseCount] = useState<number>(4);
+  const [specialInstructions, setSpecialInstructions] = useState<string>('');
+  const [charCount, setCharCount] = useState<number>(0);
+  const [activePopupGroup, setActivePopupGroup] = useState<string | null>(null);
+  const [selectedDetailedMuscles, setSelectedDetailedMuscles] = useState<Set<string>>(new Set());
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // No limit on muscle selections
 
   // Check admin status and generation count on load
   useEffect(() => {
@@ -111,8 +117,36 @@ export default function GenerateWorkoutPage() {
     return null;
   };
 
-  // Toggle muscle group selection - optimized to avoid unnecessary array recreations
+  // Store the original button ID for highlighting specific subgroups
+  const [activePopupHighlight, setActivePopupHighlight] = useState<string | null>(null);
+
+  // Handle mouse/touch down on muscle group button
+  const handleMuscleGroupMouseDown = (id: string) => {
+    // Start a timer for long press
+    longPressTimerRef.current = setTimeout(() => {
+      // Long press detected, open popup
+      setActivePopupGroup(id);
+      setActivePopupHighlight(null); // No need to highlight since each button has its own popup
+    }, 500); // 500ms for long press
+  };
+
+  // Handle mouse/touch up on muscle group button
+  const handleMuscleGroupMouseUp = (id: string) => {
+    // Clear the timer if mouse up happens before long press threshold
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  // Handle click on muscle group button (for regular selection)
   const toggleMuscleGroup = (id: string) => {
+    // Only toggle if not a long press (which would be handled by popup)
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    
     setMuscleFocus(prev => {
       // If already selected, remove it
       if (prev.includes(id)) {
@@ -132,6 +166,19 @@ export default function GenerateWorkoutPage() {
     // Clear any existing error when user interacts with the form
     if (error) setError(null);
   };
+  
+  // Handle selection of individual muscles from the popup
+  const handleSelectMuscle = (muscleId: string, selected: boolean) => {
+    setSelectedDetailedMuscles(prev => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(muscleId);
+      } else {
+        newSet.delete(muscleId);
+      }
+      return newSet;
+    });
+  };
 
   const generateWorkout = async () => {
     const validationError = validateInputs();
@@ -144,11 +191,42 @@ export default function GenerateWorkoutPage() {
     setError(null);
 
     try {
+      // Prepare special instructions with detailed muscle selection if any
+      let enhancedInstructions = specialInstructions;
+      
+      if (selectedDetailedMuscles.size > 0) {
+        // Map the detailed muscle selections to the simplified categories for API compatibility
+        const simplifiedCategories = mapToSimplifiedCategories(Array.from(selectedDetailedMuscles));
+        
+        // Add detailed muscle information to special instructions
+        const detailedMuscleInfo = Array.from(selectedDetailedMuscles).map(id => {
+          // Find the muscle name by ID
+          for (const groupId in muscleGroups) {
+            const group = muscleGroups[groupId];
+            for (const subGroupId in group.subGroups) {
+              const subGroup = group.subGroups[subGroupId];
+              const muscle = subGroup.muscles.find(m => m.id === id);
+              if (muscle) {
+                return muscle.name;
+              }
+            }
+          }
+          return id; // Fallback to ID if name not found
+        }).join(', ');
+        
+        enhancedInstructions = `${enhancedInstructions ? enhancedInstructions + '. ' : ''}Focus on these specific muscles: ${detailedMuscleInfo}.`;
+        
+        // If no muscle groups are selected but detailed muscles are, use the simplified categories
+        if (muscleFocus.length === 0 && simplifiedCategories.length > 0) {
+          setMuscleFocus(simplifiedCategories);
+        }
+      }
+      
       const requestBody: WorkoutGenerationRequest = {
         muscle_focus: muscleFocus,
         workout_focus: workoutFocus,
         exercise_count: exerciseCount,
-        special_instructions: specialInstructions
+        special_instructions: enhancedInstructions
       };
       
       let data;
@@ -216,7 +294,9 @@ export default function GenerateWorkoutPage() {
       <div className="w-full max-w-2xl p-0 shadow-md overflow-hidden">
         {/* Simplified Header */}
         <div className="bg-black text-white p-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold">AI Workout Generator</h1>
+          <div>
+            <h1 className="text-xl font-bold">AI Workout Generator</h1>
+          </div>
           {isLoaded && generationsToday !== null && (
             <div className="flex items-center text-xs">
               <span>{generationsToday}/100</span>
@@ -248,14 +328,23 @@ export default function GenerateWorkoutPage() {
                 <button 
                   key={muscle.id}
                   onClick={() => toggleMuscleGroup(muscle.id)}
+                  onMouseDown={() => handleMuscleGroupMouseDown(muscle.id)}
+                  onMouseUp={() => handleMuscleGroupMouseUp(muscle.id)}
+                  onMouseLeave={() => handleMuscleGroupMouseUp(muscle.id)}
+                  onTouchStart={() => handleMuscleGroupMouseDown(muscle.id)}
+                  onTouchEnd={() => handleMuscleGroupMouseUp(muscle.id)}
                   className={`px-2 py-1 text-xs rounded-full transition-all ${muscleFocus.includes(muscle.id) 
                     ? 'bg-black text-white' 
                     : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
                   role="checkbox"
                   aria-checked={muscleFocus.includes(muscle.id)}
-                  aria-label={`Select ${muscle.label} muscle group`}
+                  aria-label={`Select ${muscle.label} muscle group. Tap and hold for detailed selection.`}
                 >
                   {muscle.label}
+                  {/* Show indicator if detailed muscles are selected */}
+                  {Array.from(selectedDetailedMuscles).some(id => id.startsWith(muscle.id + '-')) && (
+                    <span className="ml-1 text-xs">•</span>
+                  )}
                 </button>
               ))}
             </div>
@@ -410,6 +499,24 @@ export default function GenerateWorkoutPage() {
               View workout history
             </Link>
           </div>
+          
+          {/* Muscle Group Popup */}
+          {activePopupGroup && (
+            <MuscleGroupPopup
+              groupId={activePopupGroup}
+              groupLabel={MUSCLE_GROUPS.find(m => m.id === activePopupGroup)?.label || ''}
+              isOpen={!!activePopupGroup}
+              onClose={() => {
+                setActivePopupGroup(null);
+                setActivePopupHighlight(null);
+              }}
+              onSelectMuscle={handleSelectMuscle}
+              selectedMuscles={selectedDetailedMuscles}
+              maxSelections={Infinity}
+              totalSelected={selectedDetailedMuscles.size}
+              highlightSubgroup={activePopupHighlight || undefined}
+            />
+          )}
         </div>
       </div>
     </main>
