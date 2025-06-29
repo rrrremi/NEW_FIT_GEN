@@ -76,7 +76,8 @@ give response in json:
         "equipment": "barbell",
         "movement_type": "compound",
         "order_index": 1,
-        "rationale": "Targets the chest with heavy load for maximum hypertrophy stimulus."
+        "rationale": "Lower the bar to your mid-chest with control, keeping elbows at about 45 degrees and your shoulders back.
+Never bounce the bar or press without a spotter.."
       },
       {
         "name": "Dumbbell Lateral Raise",
@@ -88,7 +89,8 @@ give response in json:
         "equipment": "dumbbell",
         "movement_type": "isolation",
         "order_index": 2,
-        "rationale": "Isolates the lateral deltoids for balanced shoulder development."
+        "rationale": "Lower the bar to your mid-chest with control, keeping elbows at about 45 degrees and your shoulders back.
+Never bounce the bar or press without a spotter."
       }
     ],
     "total_duration_minutes": 30,
