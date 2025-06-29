@@ -11,17 +11,15 @@ Exercise Selection Criteria:
   Include, target specified muscle subgroups ({{subgroupFocus}})
   High benefit-to-risk ratio, science-based selections
   Scalable/regression-friendly options included
-
+  Select not only gym workout exercises, but also plyometric exercises, running intervals, mobility exercises. 
 Exercise Specifications:
-  Format: "Equipment Exercise Name" (Equipment: Barbell, Dumbbell, Cable, Machine, Kettlebell, Resistance Band, EZ Bar, Bodyweight)
-
+  //*Format: "Equipment Exercise Name" (Equipment: Barbell, Dumbbell, Cable, Machine, Kettlebell, Resistance Band, EZ Bar, Bodyweight)
 Required Details:
   Sets/reps ({{workoutFocus}}-aligned according to science)
   Rest time (seconds according to fatigue management)
   Primary and secondary muscles
   Movement type (compound/isolation)
-  Rationale (execution, benefits, risks)
-
+  Rationale (how to?, benefits, risks)
 Mandatory Requirements:
   Exactly {{exerciseCount}} exercises
   Minimum {{minExercisesForMuscle}} targeting {{muscleFocus}}
@@ -31,7 +29,6 @@ Mandatory Requirements:
   Multiple angles for single muscle focus
   No duplicate similar exercises
   Include non-gym movements for plyometric focus
-
 Quality Assurance:
   Verify constraint compliance and goal alignment
   Prevent excessive joint/pattern fatigue
@@ -39,8 +36,7 @@ Quality Assurance:
   Balance muscle groups and movement planes
   Confirm naming consistency
   Optimize {{workoutFocus}}-specific sequencing
-  
-/*
+  /*
   TASK:
   1. Select exercises that:
      - Focus on prioritized body parts across the plan
