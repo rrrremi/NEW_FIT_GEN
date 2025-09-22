@@ -70,13 +70,27 @@ export async function POST(request: NextRequest) {
     console.log('OpenAI API Key exists:', !!process.env.OPENAI_API_KEY);
     console.log('OpenAI API Key prefix:', process.env.OPENAI_API_KEY?.substring(0, 7) + '...');
     
-    // Declare result variable outside the try block so it's accessible throughout the function
+    // Declare variables outside the try block so they're accessible throughout the function
     let result;
     
+    // Convert muscle_focus and workout_focus to arrays if they're strings
+    const muscleFocusArray = Array.isArray(body.muscle_focus) ? body.muscle_focus : 
+      (typeof body.muscle_focus === 'string' ? 
+        (body.muscle_focus.startsWith('[') && body.muscle_focus.endsWith(']') ? 
+          JSON.parse(body.muscle_focus) : [body.muscle_focus]) : 
+        []);
+    
+    const workoutFocusArray = Array.isArray(body.workout_focus) ? body.workout_focus : 
+      (typeof body.workout_focus === 'string' ? 
+        (body.workout_focus.startsWith('[') && body.workout_focus.endsWith(']') ? 
+          JSON.parse(body.workout_focus) : [body.workout_focus]) : 
+        ['hypertrophy']);
+        
     try {
+      
       result = await generateWorkout(
-        body.muscle_focus, 
-        body.workout_focus, 
+        muscleFocusArray, 
+        workoutFocusArray, 
         body.exercise_count,
         body.special_instructions,
         false, // Not a retry
@@ -115,9 +129,9 @@ export async function POST(request: NextRequest) {
           completion_tokens: result.usage?.completionTokens,
           generation_time_ms: result.generationTimeMs,
           parse_attempts: result.parseAttempts,
-          // Save the customization fields
-          muscle_focus: body.muscle_focus,
-          workout_focus: body.workout_focus,
+          // Save the customization fields using the arrays we created
+          muscle_focus: muscleFocusArray,
+          workout_focus: workoutFocusArray,
           exercise_count: body.exercise_count,
           special_instructions: body.special_instructions
         })
@@ -275,30 +289,62 @@ export async function POST(request: NextRequest) {
  */
 function validateRequest(body: WorkoutGenerationRequest): string | null {
   // Check muscle focus
-  if (!Array.isArray(body.muscle_focus)) {
-    return 'muscle_focus must be an array';
+  let muscleFocusArray: string[] = [];
+  
+  if (Array.isArray(body.muscle_focus)) {
+    muscleFocusArray = body.muscle_focus;
+  } else if (typeof body.muscle_focus === 'string') {
+    // Try to parse if it looks like a JSON array
+    if (body.muscle_focus.startsWith('[') && body.muscle_focus.endsWith(']')) {
+      try {
+        muscleFocusArray = JSON.parse(body.muscle_focus);
+      } catch (e) {
+        // If parsing fails, treat as a single string
+        muscleFocusArray = [body.muscle_focus];
+      }
+    } else {
+      muscleFocusArray = [body.muscle_focus];
+    }
+  } else if (body.muscle_focus) {
+    return 'muscle_focus must be a string or an array';
   }
   
-  if (body.muscle_focus.length > 4) {
+  if (muscleFocusArray.length > 4) {
     return 'Maximum 4 muscle groups allowed';
   }
   
   // Validate each muscle group
-  if (body.muscle_focus.length > 0 && !body.muscle_focus.every(m => ALLOWED_MUSCLES.includes(m.toLowerCase()))) {
+  if (muscleFocusArray.length > 0 && !muscleFocusArray.every(m => ALLOWED_MUSCLES.includes(m.toLowerCase()))) {
     return 'Invalid muscle group';
   }
   
   // Check workout focus
-  if (!Array.isArray(body.workout_focus)) {
-    return 'workout_focus must be an array';
+  let workoutFocusArray: string[] = [];
+  
+  if (Array.isArray(body.workout_focus)) {
+    workoutFocusArray = body.workout_focus;
+  } else if (typeof body.workout_focus === 'string') {
+    // Try to parse if it looks like a JSON array
+    if (body.workout_focus.startsWith('[') && body.workout_focus.endsWith(']')) {
+      try {
+        workoutFocusArray = JSON.parse(body.workout_focus);
+      } catch (e) {
+        // If parsing fails, treat as a single string
+        workoutFocusArray = [body.workout_focus];
+      }
+    } else {
+      workoutFocusArray = [body.workout_focus];
+    }
+  } else if (body.workout_focus) {
+    return 'workout_focus must be a string or an array';
   }
   
-  if (body.workout_focus.length < 1 || body.workout_focus.length > 3) {
+  if (workoutFocusArray.length < 1 || workoutFocusArray.length > 3) {
     return 'Please select 1-3 workout focus types';
   }
   
   // Validate each workout focus
-  if (!body.workout_focus.every(focus => ALLOWED_FOCUS.includes(focus.toLowerCase()))) {
+  if (!workoutFocusArray.every(focus => ALLOWED_FOCUS.includes(focus.toLowerCase()))) {
     return 'Invalid workout focus';
   }
   
