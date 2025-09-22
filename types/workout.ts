@@ -36,8 +36,8 @@ export interface Workout {
   parse_attempts: number;
   created_at: string;
   // Customization fields
-  muscle_focus: string[];
-  workout_focus: string[];
+  muscle_focus: string[] | string;
+  workout_focus: string[] | string;
   exercise_count: number;
   special_instructions?: string;
   // New summary fields
@@ -49,8 +49,8 @@ export interface Workout {
 }
 
 export interface WorkoutGenerationRequest {
-  muscle_focus: string[];
-  workout_focus: string[];
+  muscle_focus: string[] | string;
+  workout_focus: string[] | string;
   exercise_count: number;
   special_instructions?: string;
 }

@@ -213,27 +213,23 @@ export default function WorkoutDetailPage({ params }: { params: { id: string } }
                               
                               if (Array.isArray(workout.workout_focus)) {
                                 focusArray = workout.workout_focus;
-                              } else {
-                                // Handle case where workout_focus might be a string due to database format
-                                // Use type assertion to tell TypeScript this is intentional
-                                const focusValue = workout.workout_focus as unknown as string;
+                              } else if (typeof workout.workout_focus === 'string') {
+                                // Handle case where workout_focus is a string
+                                const focusValue = workout.workout_focus;
                                 
-                                // Now we can safely use string methods
-                                if (typeof focusValue === 'string') {
-                                  if (focusValue.startsWith('[') && focusValue.endsWith(']')) {
-                                    try {
-                                      focusArray = JSON.parse(focusValue);
-                                    } catch (e) {
-                                      // If parsing fails, treat as a single string
-                                      focusArray = [focusValue];
-                                    }
-                                  } else {
+                                if (focusValue.startsWith('[') && focusValue.endsWith(']')) {
+                                  try {
+                                    focusArray = JSON.parse(focusValue);
+                                  } catch (e) {
+                                    // If parsing fails, treat as a single string
                                     focusArray = [focusValue];
                                   }
+                                } else {
+                                  focusArray = [focusValue];
                                 }
                               }
                               
-                              return focusArray.map((focus, i) => {
+                              return focusArray.map((focus: string, i: number) => {
                                 // Clean up any remaining quotes
                                 const cleanFocus = typeof focus === 'string' ? focus.replace(/["']/g, '') : focus;
                                 return (
@@ -281,13 +277,20 @@ export default function WorkoutDetailPage({ params }: { params: { id: string } }
                         <p className="text-white/90">{workout.equipment_needed}</p>
                       </div>
 
-                      {workout.muscle_focus && workout.muscle_focus.length > 0 && (
+                      {workout.muscle_focus && (Array.isArray(workout.muscle_focus) ? workout.muscle_focus.length > 0 : workout.muscle_focus) && (
                         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                           <div className="flex items-center gap-2 text-sm text-white/70 mb-2">
                             <Target className="h-4 w-4" />
                             Specific Focus Areas
                           </div>
-                          <p className="text-white/90">{workout.muscle_focus.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', ')}</p>
+                          <p className="text-white/90">
+                            {Array.isArray(workout.muscle_focus) 
+                              ? workout.muscle_focus.map((m: string) => m.charAt(0).toUpperCase() + m.slice(1)).join(', ')
+                              : typeof workout.muscle_focus === 'string' 
+                                ? workout.muscle_focus.charAt(0).toUpperCase() + workout.muscle_focus.slice(1)
+                                : ''
+                            }
+                          </p>
                         </div>
                       )}
                     </div>
