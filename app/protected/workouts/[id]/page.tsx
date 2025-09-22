@@ -213,17 +213,23 @@ export default function WorkoutDetailPage({ params }: { params: { id: string } }
                               
                               if (Array.isArray(workout.workout_focus)) {
                                 focusArray = workout.workout_focus;
-                              } else if (typeof workout.workout_focus === 'string') {
-                                // Try to parse if it looks like a JSON array
-                                if (workout.workout_focus.startsWith('[') && workout.workout_focus.endsWith(']')) {
-                                  try {
-                                    focusArray = JSON.parse(workout.workout_focus);
-                                  } catch (e) {
-                                    // If parsing fails, treat as a single string
-                                    focusArray = [workout.workout_focus];
+                              } else {
+                                // Handle case where workout_focus might be a string due to database format
+                                // Use type assertion to tell TypeScript this is intentional
+                                const focusValue = workout.workout_focus as unknown as string;
+                                
+                                // Now we can safely use string methods
+                                if (typeof focusValue === 'string') {
+                                  if (focusValue.startsWith('[') && focusValue.endsWith(']')) {
+                                    try {
+                                      focusArray = JSON.parse(focusValue);
+                                    } catch (e) {
+                                      // If parsing fails, treat as a single string
+                                      focusArray = [focusValue];
+                                    }
+                                  } else {
+                                    focusArray = [focusValue];
                                   }
-                                } else {
-                                  focusArray = [workout.workout_focus];
                                 }
                               }
                               
