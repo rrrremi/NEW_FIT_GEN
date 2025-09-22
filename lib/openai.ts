@@ -8,6 +8,11 @@ const initializeOpenAI = () => {
   // Check if API key exists
   if (!process.env.OPENAI_API_KEY) {
     console.error('OPENAI_API_KEY is not defined in environment variables');
+    // During build time, return a dummy client instead of throwing an error
+    if (process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build') {
+      console.warn('Running in build phase - returning dummy OpenAI client');
+      return null;
+    }
     throw new Error('OpenAI API key is missing');
   }
 
@@ -24,7 +29,18 @@ const initializeOpenAI = () => {
   }
 };
 
-const openai = initializeOpenAI();
+// Initialize the client, but allow it to be null during build time
+let openai: OpenAI | null;
+try {
+  openai = initializeOpenAI();
+} catch (error) {
+  console.error('Error initializing OpenAI client:', error);
+  // Only throw during runtime, not during build
+  if (process.env.NODE_ENV !== 'production' || process.env.NEXT_PHASE !== 'phase-production-build') {
+    throw error;
+  }
+  openai = null;
+}
 
 /**
  * Result of workout generation
@@ -273,6 +289,16 @@ export async function generateWorkout(
     
     // Sanity-check: the singleton client should have been created above
     if (!openai) {
+      // During build time, return a dummy response instead of throwing an error
+      if (process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build') {
+        console.warn('Running in build phase - returning dummy workout data');
+        return {
+          success: false,
+          error: 'OpenAI client is not available during build',
+          parseAttempts,
+          generationTimeMs: Date.now() - startTime,
+        };
+      }
       throw new Error('OpenAI client is not initialized');
     }
 

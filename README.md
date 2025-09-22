@@ -88,7 +88,12 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Required for workout generation
+OPENAI_API_KEY=your_openai_api_key
 ```
+
+> **Important**: The OpenAI API key is required for workout generation functionality. If you're deploying to Vercel or another platform, make sure to add this environment variable in your deployment settings.
 
 ### Database Setup
 

@@ -67,8 +67,23 @@ export async function POST(request: NextRequest) {
 
     // Generate workout with user inputs
     console.log('Attempting to generate workout with OpenAI...');
-    console.log('OpenAI API Key exists:', !!process.env.OPENAI_API_KEY);
-    console.log('OpenAI API Key prefix:', process.env.OPENAI_API_KEY?.substring(0, 7) + '...');
+    
+    // Check if OpenAI API key exists
+    const apiKeyExists = !!process.env.OPENAI_API_KEY;
+    console.log('OpenAI API Key exists:', apiKeyExists);
+    
+    // Only log the prefix if the key exists
+    if (apiKeyExists) {
+      console.log('OpenAI API Key prefix:', process.env.OPENAI_API_KEY?.substring(0, 7) + '...');
+    } else {
+      console.warn('OpenAI API Key is missing. Workout generation will fail.');
+      
+      // During build time, we don't want to fail
+      if (process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build') {
+        console.warn('Running in build phase - skipping OpenAI call');
+        return NextResponse.json({ error: 'OpenAI API key is required for workout generation' }, { status: 500 });
+      }
+    }
     
     // Declare variables outside the try block so they're accessible throughout the function
     let result;
