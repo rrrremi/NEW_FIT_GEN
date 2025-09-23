@@ -361,7 +361,7 @@ export default function GenerateWorkoutPage() {
                   >
                     <button
                       onClick={() => toggleWorkoutFocus(focus.id)}
-                      className={`flex flex-col items-center justify-center p-3 h-full rounded-lg transition-colors ${
+                      className={`flex flex-col items-center justify-center p-3 h-full rounded-lg transition-colors w-full min-w-[90px] aspect-square ${
                         workoutFocus.includes(focus.id)
                           ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-500/50'
                           : 'bg-white/10 text-white/70 border border-white/10 hover:bg-white/20'
@@ -383,7 +383,7 @@ export default function GenerateWorkoutPage() {
                     return focus ? (
                       <span 
                         key={focusId}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-cyan-500/20 text-xs text-cyan-300"
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-cyan-500/20 text-xs text-cyan-300 min-w-[80px] justify-center"
                       >
                         {focus.label}
                         {workoutFocus.length > 1 && (
