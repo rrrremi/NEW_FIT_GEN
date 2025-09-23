@@ -316,23 +316,23 @@ export default function GenerateWorkoutPage() {
           className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl overflow-hidden"
         >
           {/* Form Content */}
-          <div className="p-5">
+          <div className="p-4">
             {/* Error Message */}
             {error && (
-              <div className="mb-4 p-3 rounded-lg bg-red-500/20 text-red-200 text-sm">
+              <div className="mb-3 p-2 rounded-lg bg-red-500/20 text-red-200 text-xs">
                 {error}
               </div>
             )}
 
             {/* Muscle Groups - Horizontal Chips */}
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-white/80 mb-2">Target Muscles</label>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-white/80 mb-1.5">Target Muscles</label>
               <div className="flex flex-wrap gap-2">
                 {MUSCLE_GROUPS.map((group) => (
                   <button
                     key={group.id}
                     onClick={() => toggleMuscleGroup(group.id)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                       muscleFocus.includes(group.id)
                         ? 'bg-fuchsia-500/30 text-fuchsia-200 border border-fuchsia-500/50'
                         : 'bg-white/10 text-white/70 border border-white/10 hover:bg-white/20'
@@ -345,14 +345,14 @@ export default function GenerateWorkoutPage() {
             </div>
 
             {/* Workout Focus - Multiple Selection (up to 3) */}
-            <div className="mb-5">
-              <div className="flex justify-between items-center mb-2">
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-1.5">
                 <label className="text-sm font-medium text-white/80">Workout Focus</label>
-                <span className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded-full">
+                <span className="text-xs text-white/60 bg-white/10 px-2 py-0.5 rounded-full">
                   {workoutFocus.length}/3 selected
                 </span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="flex flex-wrap gap-2">
                 {WORKOUT_FOCUS.map((focus) => (
                   <Tooltip 
                     key={focus.id}
@@ -361,14 +361,14 @@ export default function GenerateWorkoutPage() {
                   >
                     <button
                       onClick={() => toggleWorkoutFocus(focus.id)}
-                      className={`flex flex-col items-center justify-center p-3 h-full rounded-lg transition-colors w-full min-w-[90px] aspect-square ${
+                      className={`flex flex-row items-center justify-center px-3 py-1.5 rounded-lg transition-colors ${
                         workoutFocus.includes(focus.id)
                           ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-500/50'
                           : 'bg-white/10 text-white/70 border border-white/10 hover:bg-white/20'
                       }`}
                       aria-pressed={workoutFocus.includes(focus.id)}
                     >
-                      <focus.icon className={`h-5 w-5 mb-1.5 ${workoutFocus.includes(focus.id) ? 'text-cyan-300' : 'text-white/60'}`} />
+                      <focus.icon className={`h-4 w-4 mr-1.5 ${workoutFocus.includes(focus.id) ? 'text-cyan-300' : 'text-white/60'}`} />
                       <span className="text-xs font-medium">{focus.label}</span>
                     </button>
                   </Tooltip>
@@ -377,13 +377,13 @@ export default function GenerateWorkoutPage() {
               
               {/* Selected Focus Summary */}
               {workoutFocus.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-2 flex flex-wrap gap-1.5">
                   {workoutFocus.map(focusId => {
                     const focus = WORKOUT_FOCUS.find(f => f.id === focusId);
                     return focus ? (
                       <span 
                         key={focusId}
-                        className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-cyan-500/20 text-xs text-cyan-300 min-w-[80px] justify-center"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-cyan-500/20 text-xs text-cyan-300 justify-center"
                       >
                         {focus.label}
                         {workoutFocus.length > 1 && (
@@ -402,8 +402,8 @@ export default function GenerateWorkoutPage() {
             </div>
 
             {/* Exercise Count - Simple Slider */}
-            <div className="mb-5">
-              <div className="flex justify-between items-center mb-2">
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-1.5">
                 <label className="text-sm font-medium text-white/80">Exercises</label>
                 <span className="text-sm font-medium text-fuchsia-300">{exerciseCount}</span>
               </div>
@@ -418,7 +418,7 @@ export default function GenerateWorkoutPage() {
             </div>
 
             {/* Special Instructions - Minimal Input */}
-            <div className="mb-5">
+            <div className="mb-4">
               <input
                 type="text"
                 value={specialInstructions}
@@ -427,7 +427,7 @@ export default function GenerateWorkoutPage() {
                   setCharCount(e.target.value.length);
                 }}
                 placeholder="Optional: Special instructions..."
-                className="w-full p-3 rounded-lg border border-white/10 bg-white/5 text-white placeholder-white/40 focus:border-fuchsia-400/50 focus:outline-none text-sm"
+                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 text-white placeholder-white/40 focus:border-fuchsia-400/50 focus:outline-none text-sm"
                 maxLength={140}
               />
               {charCount > 0 && (
