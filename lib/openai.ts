@@ -322,12 +322,31 @@ export async function generateWorkout(
       console.log('Successfully received response from OpenAI');
     } catch (apiError) {
       console.error('Error calling OpenAI API:', apiError);
-      if (apiError instanceof Error) {
-        console.error('Error details:', apiError.message);
-        if ('status' in apiError) {
-          console.error('API status code:', (apiError as any).status);
-        }
+      
+      // Check for rate limit or quota errors
+      const errorMessage = apiError instanceof Error ? apiError.message : String(apiError);
+      // Safely check for status property
+      const errorStatus = apiError && typeof apiError === 'object' && 'status' in (apiError as object) ? 
+        (apiError as Record<string, unknown>).status as number : 
+        null;
+      
+      // Log detailed error information
+      console.error('Error details:', errorMessage);
+      if (errorStatus) {
+        console.error('API status code:', errorStatus);
       }
+      
+      // Handle specific error types
+      if (errorStatus === 429 || errorMessage.includes('429') || 
+          errorMessage.includes('exceeded your current quota') || 
+          errorMessage.includes('rate limit')) {
+        throw new Error('OpenAI API rate limit exceeded. Please try again later or check your billing details.');
+      } else if (errorStatus === 401 || errorMessage.includes('401') || errorMessage.includes('invalid api key')) {
+        throw new Error('Invalid OpenAI API key. Please check your API key configuration.');
+      } else if (errorStatus === 500 || errorMessage.includes('500')) {
+        throw new Error('OpenAI service error. The API is currently experiencing issues.');
+      }
+      
       throw apiError;
     }
     
