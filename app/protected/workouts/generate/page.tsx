@@ -401,14 +401,14 @@ export default function GenerateWorkoutPage() {
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-cyan-500/20 text-xs text-cyan-300 justify-center"
                       >
                         {focus.label}
-                        {workoutFocus.length > 1 && (
-                          <button
-                            onClick={() => toggleWorkoutFocus(focusId)}
-                            className="ml-1 hover:text-cyan-200"
-                          >
-                            ×
-                          </button>
-                        )}
+                        <button
+                          onClick={() => toggleWorkoutFocus(focusId)}
+                          className={`ml-1 ${workoutFocus.length > 1 ? 'hover:text-cyan-200' : 'opacity-40 cursor-not-allowed'}`}
+                          disabled={workoutFocus.length <= 1}
+                          title={workoutFocus.length <= 1 ? 'At least one focus is required' : 'Remove focus'}
+                        >
+                          ×
+                        </button>
                       </span>
                     ) : null;
                   })}
