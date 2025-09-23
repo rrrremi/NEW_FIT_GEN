@@ -54,7 +54,7 @@ export default function AdminPage() {
 
         // Get workout counts for each user
         const usersWithStats = await Promise.all(
-          (userData || []).map(async (user) => {
+          (userData || []).map(async (user: any) => {
             const { count: workoutCount } = await supabase
               .from('workouts')
               .select('id', { count: 'exact', head: true })
