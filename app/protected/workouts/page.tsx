@@ -4,8 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { motion } from 'framer-motion'
-import { Dumbbell, Sparkles, Target, Clock, BarChart3, Trash2, AlertCircle } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Dumbbell, Sparkles, Target, Clock, BarChart3, Trash2, AlertCircle, Search, Filter, X, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
 
 // Number of workouts to load per page for infinite scroll
 const WORKOUTS_PER_PAGE = 10
@@ -17,8 +17,9 @@ export default function WorkoutsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
-  // Workout list with infinite scroll
+  // Workout list with pagination
   const [workouts, setWorkouts] = useState<any[]>([])
+  const [filteredWorkouts, setFilteredWorkouts] = useState<any[]>([])
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -26,6 +27,24 @@ export default function WorkoutsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const observer = useRef<IntersectionObserver | null>(null)
   const lastWorkoutElementRef = useRef<HTMLDivElement | null>(null)
+  
+  // Filter states
+  const [showFilters, setShowFilters] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedMuscleGroups, setSelectedMuscleGroups] = useState<string[]>([])
+  const [selectedWorkoutFocus, setSelectedWorkoutFocus] = useState<string[]>([])
+  const [dateRange, setDateRange] = useState<{start: Date | null, end: Date | null}>({start: null, end: null})
+  const [isFiltering, setIsFiltering] = useState(false)
+  
+  // Available filter options
+  const muscleGroupOptions = [
+    'chest', 'back', 'shoulders', 'biceps', 'triceps', 'forearms',
+    'neck', 'core', 'glutes', 'quads', 'hamstrings', 'calves'
+  ]
+  
+  const workoutFocusOptions = [
+    'hypertrophy', 'strength', 'cardio', 'isolation', 'stability', 'plyometric', 'isometric'
+  ]
   
   const supabase = createClient()
   
@@ -62,7 +81,7 @@ export default function WorkoutsPage() {
     fetchUserData()
   }, [supabase, router])
   
-  // Fetch workouts with infinite scroll
+  // Fetch workouts with filtering capabilities
   const fetchWorkouts = async (pageNumber = 1, append = false) => {
     try {
       if (pageNumber === 1) {
@@ -81,21 +100,67 @@ export default function WorkoutsPage() {
       const from = (pageNumber - 1) * ITEMS_PER_PAGE
       const to = from + ITEMS_PER_PAGE - 1
       
-      const { data, error } = await supabase
+      // Start building the query
+      let query = supabase
         .from('workouts')
         .select(
           'id, created_at, total_duration_minutes, muscle_focus, workout_focus, workout_data'
         )
         .order('created_at', { ascending: false })
-        .range(from, to)
+      
+      // Apply date range filter if set
+      if (dateRange.start) {
+        query = query.gte('created_at', dateRange.start.toISOString())
+      }
+      if (dateRange.end) {
+        // Add one day to include the end date fully
+        const endDate = new Date(dateRange.end)
+        endDate.setDate(endDate.getDate() + 1)
+        query = query.lt('created_at', endDate.toISOString())
+      }
+      
+      // Apply pagination
+      query = query.range(from, to)
+      
+      // Execute the query
+      const { data, error } = await query
       
       if (error) throw error
       
       if (data) {
+        // Process the data for client-side filtering
+        let processedData = data.map((workout: any) => {
+          // Ensure muscle_focus is always an array
+          let muscleFocus = workout.muscle_focus
+          if (typeof muscleFocus === 'string') {
+            try {
+              muscleFocus = JSON.parse(muscleFocus)
+            } catch {
+              muscleFocus = [muscleFocus]
+            }
+          }
+          
+          // Ensure workout_focus is always an array
+          let workoutFocus = workout.workout_focus
+          if (typeof workoutFocus === 'string') {
+            try {
+              workoutFocus = JSON.parse(workoutFocus)
+            } catch {
+              workoutFocus = [workoutFocus]
+            }
+          }
+          
+          return {
+            ...workout,
+            muscle_focus: Array.isArray(muscleFocus) ? muscleFocus : [muscleFocus],
+            workout_focus: Array.isArray(workoutFocus) ? workoutFocus : [workoutFocus]
+          }
+        })
+        
         if (append) {
-          setWorkouts(prev => [...prev, ...data])
+          setWorkouts(prev => [...prev, ...processedData])
         } else {
-          setWorkouts(data)
+          setWorkouts(processedData)
         }
         
         // If we got fewer results than requested, there are no more
@@ -108,6 +173,62 @@ export default function WorkoutsPage() {
       setLoading(false)
       setLoadingMore(false)
     }
+  }
+  
+  // Apply client-side filters
+  const applyFilters = useCallback(() => {
+    setIsFiltering(true)
+    
+    let filtered = [...workouts]
+    
+    // Filter by search term
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(workout => {
+        // Search in workout data
+        const exerciseNames = workout.workout_data.exercises.map((ex: any) => ex.name.toLowerCase())
+        const hasMatchingExercise = exerciseNames.some((name: string) => name.includes(term))
+        
+        // Check date
+        const date = new Date(workout.created_at).toLocaleDateString().toLowerCase()
+        
+        return hasMatchingExercise || date.includes(term)
+      })
+    }
+    
+    // Filter by muscle groups
+    if (selectedMuscleGroups.length > 0) {
+      filtered = filtered.filter(workout => {
+        return selectedMuscleGroups.some(muscle => 
+          workout.muscle_focus.some((m: string) => 
+            m.toLowerCase() === muscle.toLowerCase()
+          )
+        )
+      })
+    }
+    
+    // Filter by workout focus
+    if (selectedWorkoutFocus.length > 0) {
+      filtered = filtered.filter(workout => {
+        return selectedWorkoutFocus.some(focus => 
+          workout.workout_focus.some((f: string) => 
+            f.toLowerCase() === focus.toLowerCase()
+          )
+        )
+      })
+    }
+    
+    setFilteredWorkouts(filtered)
+    setIsFiltering(false)
+  }, [workouts, searchTerm, selectedMuscleGroups, selectedWorkoutFocus])
+  
+  // Reset all filters
+  const resetFilters = () => {
+    setSearchTerm('')
+    setSelectedMuscleGroups([])
+    setSelectedWorkoutFocus([])
+    setDateRange({start: null, end: null})
+    setFilteredWorkouts(workouts)
   }
   
   // Handle workout deletion
@@ -135,6 +256,18 @@ export default function WorkoutsPage() {
   useEffect(() => {
     fetchWorkouts()
   }, [currentPage])
+  
+  // Apply filters when filter criteria change
+  useEffect(() => {
+    if (workouts.length > 0) {
+      applyFilters()
+    }
+  }, [workouts, searchTerm, selectedMuscleGroups, selectedWorkoutFocus, applyFilters])
+  
+  // Initialize filtered workouts
+  useEffect(() => {
+    setFilteredWorkouts(workouts)
+  }, [workouts])
 
   if (loading && workouts.length === 0) {
     return (
@@ -210,10 +343,161 @@ export default function WorkoutsPage() {
           {/* Workout List */}
           <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl overflow-hidden">
             <div className="p-4 sm:p-6 border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-fuchsia-400" />
-                <span className="text-base sm:text-lg font-medium text-white/90">Workout History</span>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-fuchsia-400" />
+                  <span className="text-base sm:text-lg font-medium text-white/90">Workout History</span>
+                </div>
+                
+                {/* Search and Filter Controls */}
+                <div className="flex items-center gap-2">
+                  {/* Search Input */}
+                  <div className="relative flex-1 sm:min-w-[200px]">
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/40" />
+                    <input
+                      type="text"
+                      placeholder="Search workouts..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-sm text-white/90 placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-fuchsia-400/50"
+                    />
+                  </div>
+                  
+                  {/* Filter Toggle Button */}
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-sm text-white/80 transition-colors"
+                  >
+                    <Filter className="h-4 w-4" />
+                    <span className="hidden sm:inline">Filters</span>
+                    {showFilters ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                  </button>
+                </div>
               </div>
+              
+              {/* Expandable Filter Panel */}
+              <AnimatePresence>
+                {showFilters && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-4 pt-4 border-t border-white/10">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Muscle Group Filter */}
+                        <div>
+                          <h4 className="text-sm font-medium text-white/80 mb-2">Muscle Groups</h4>
+                          <div className="flex flex-wrap gap-1.5">
+                            {muscleGroupOptions.map((muscle) => (
+                              <button
+                                key={muscle}
+                                onClick={() => {
+                                  setSelectedMuscleGroups(prev =>
+                                    prev.includes(muscle)
+                                      ? prev.filter(m => m !== muscle)
+                                      : [...prev, muscle]
+                                  )
+                                }}
+                                className={`px-2 py-1 text-xs rounded-full transition-colors ${selectedMuscleGroups.includes(muscle)
+                                  ? 'bg-fuchsia-500/30 text-fuchsia-200 border border-fuchsia-500/50'
+                                  : 'bg-white/5 text-white/70 border border-white/10 hover:bg-white/10'
+                                }`}
+                              >
+                                {muscle.charAt(0).toUpperCase() + muscle.slice(1)}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Workout Focus Filter */}
+                        <div>
+                          <h4 className="text-sm font-medium text-white/80 mb-2">Workout Focus</h4>
+                          <div className="flex flex-wrap gap-1.5">
+                            {workoutFocusOptions.map((focus) => (
+                              <button
+                                key={focus}
+                                onClick={() => {
+                                  setSelectedWorkoutFocus(prev =>
+                                    prev.includes(focus)
+                                      ? prev.filter(f => f !== focus)
+                                      : [...prev, focus]
+                                  )
+                                }}
+                                className={`px-2 py-1 text-xs rounded-full transition-colors ${selectedWorkoutFocus.includes(focus)
+                                  ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-500/50'
+                                  : 'bg-white/5 text-white/70 border border-white/10 hover:bg-white/10'
+                                }`}
+                              >
+                                {focus.charAt(0).toUpperCase() + focus.slice(1)}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Filter Actions */}
+                      <div className="flex justify-end mt-4">
+                        <button
+                          onClick={resetFilters}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-sm text-white/80 transition-colors"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          Reset Filters
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              {/* Active Filters Display */}
+              {(selectedMuscleGroups.length > 0 || selectedWorkoutFocus.length > 0 || searchTerm) && (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-white/60">Active filters:</span>
+                  {searchTerm && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/10 text-xs text-white/80">
+                      Search: {searchTerm}
+                      <button 
+                        onClick={() => setSearchTerm('')}
+                        className="ml-1 hover:text-white"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  )}
+                  {selectedMuscleGroups.map(muscle => (
+                    <span 
+                      key={muscle}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-fuchsia-500/20 text-xs text-fuchsia-300"
+                    >
+                      {muscle.charAt(0).toUpperCase() + muscle.slice(1)}
+                      <button 
+                        onClick={() => setSelectedMuscleGroups(prev => prev.filter(m => m !== muscle))}
+                        className="ml-1 hover:text-white"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                  {selectedWorkoutFocus.map(focus => (
+                    <span 
+                      key={focus}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-cyan-500/20 text-xs text-cyan-300"
+                    >
+                      {focus.charAt(0).toUpperCase() + focus.slice(1)}
+                      <button 
+                        onClick={() => setSelectedWorkoutFocus(prev => prev.filter(f => f !== focus))}
+                        className="ml-1 hover:text-white"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="p-4 sm:p-6">
@@ -224,60 +508,42 @@ export default function WorkoutsPage() {
                 </div>
               )}
 
-              {workouts.length > 0 ? (
-                <div className="space-y-3">
-                  {workouts.map((workout) => (
+              {isFiltering ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin h-6 w-6 border-2 border-fuchsia-500 border-t-transparent rounded-full"></div>
+                </div>
+              ) : filteredWorkouts.length > 0 ? (
+                <div className="space-y-2">
+                  {filteredWorkouts.map((workout) => (
                     <div
                       key={workout.id}
                       onClick={() => router.push(`/protected/workouts/${workout.id}`)}
-                      className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 hover:bg-white/10 transition-all duration-200 focus-ring cursor-pointer"
+                      className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-xl p-3 hover:bg-white/10 transition-all duration-200 focus-ring cursor-pointer group"
                     >
-                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-white/90 truncate pr-2">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="flex-1 min-w-0 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-400 group-hover:bg-cyan-400 transition-colors flex-shrink-0" />
+                                <h3 className="font-medium text-white/90 truncate text-sm">
                                   Workout {new Date(workout.created_at).toLocaleDateString()}
                                 </h3>
-                                <div className="flex flex-wrap gap-1.5 mt-1">
-                                  {(() => {
-                                    // Handle different possible formats of workout_focus
-                                    let focusArray = [];
-                                    
-                                    if (Array.isArray(workout.workout_focus)) {
-                                      focusArray = workout.workout_focus;
-                                    } else if (typeof workout.workout_focus === 'string') {
-                                      // Try to parse if it looks like a JSON array
-                                      if (workout.workout_focus.startsWith('[') && workout.workout_focus.endsWith(']')) {
-                                        try {
-                                          focusArray = JSON.parse(workout.workout_focus);
-                                        } catch (e) {
-                                          // If parsing fails, treat as a single string
-                                          focusArray = [workout.workout_focus];
-                                        }
-                                      } else {
-                                        focusArray = [workout.workout_focus];
-                                      }
-                                    }
-                                    
-                                    return focusArray.map((focus: string, i: number) => {
-                                      // Clean up any remaining quotes
-                                      const cleanFocus = typeof focus === 'string' ? focus.replace(/["']/g, '') : focus;
-                                      return (
-                                        <span key={i} className="text-xs font-medium px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 capitalize">
-                                          {cleanFocus}
-                                        </span>
-                                      );
-                                    });
-                                  })()}
-                                </div>
-                              </div>
-                              <div className="flex-shrink-0">
-                                <div className="w-2 h-2 rounded-full bg-fuchsia-400 group-hover:bg-cyan-400 transition-colors" />
                               </div>
                             </div>
+                            
+                            <div className="flex flex-wrap gap-1.5 mb-2 pl-3.5">
+                              {workout.workout_focus.map((focus: string, i: number) => {
+                                // Clean up any remaining quotes
+                                const cleanFocus = typeof focus === 'string' ? focus.replace(/["']/g, '') : focus;
+                                return (
+                                  <span key={i} className="text-xs font-medium px-1.5 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 capitalize">
+                                    {cleanFocus}
+                                  </span>
+                                );
+                              })}
+                            </div>
 
-                            <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm text-white/50 mt-3">
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-white/50 pl-3.5">
                               <div className="flex items-center gap-1">
                                 <Target className="h-3 w-3" />
                                 <span>{workout.workout_data.exercises.length} exercises</span>
@@ -288,7 +554,7 @@ export default function WorkoutsPage() {
                               </div>
                               <div className="flex items-center gap-1">
                                 <BarChart3 className="h-3 w-3" />
-                                <span>{workout.muscle_focus.join(', ')}</span>
+                                <span className="truncate max-w-[150px]">{workout.muscle_focus.join(', ')}</span>
                               </div>
                             </div>
                           </div>
@@ -300,10 +566,10 @@ export default function WorkoutsPage() {
                                   e.stopPropagation();
                                   handleDelete(workout.id);
                                 }}
-                                className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-red-400 transition-colors"
+                                className="p-1.5 rounded-lg hover:bg-white/10 text-white/60 hover:text-red-400 transition-colors"
                                 aria-label="Delete workout"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             </div>
                           )}
@@ -312,18 +578,39 @@ export default function WorkoutsPage() {
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="h-16 w-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
-                    <Dumbbell className="h-8 w-8 text-white/30" />
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="h-12 w-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
+                    {selectedMuscleGroups.length > 0 || selectedWorkoutFocus.length > 0 || searchTerm ? (
+                      <Search className="h-6 w-6 text-white/30" />
+                    ) : (
+                      <Dumbbell className="h-6 w-6 text-white/30" />
+                    )}
                   </div>
-                  <h3 className="text-lg font-medium text-white/80 mb-2">No workouts yet</h3>
-                  <p className="text-sm text-white/50 max-w-md mb-6">
-                    Generate your first workout to get started on your fitness journey
+                  <h3 className="text-base font-medium text-white/80 mb-1.5">
+                    {selectedMuscleGroups.length > 0 || selectedWorkoutFocus.length > 0 || searchTerm ? 
+                      'No matching workouts found' : 
+                      'No workouts yet'}
+                  </h3>
+                  <p className="text-sm text-white/50 max-w-md mb-4">
+                    {selectedMuscleGroups.length > 0 || selectedWorkoutFocus.length > 0 || searchTerm ? 
+                      'Try adjusting your filters or create a new workout' : 
+                      'Generate your first workout to get started on your fitness journey'}
                   </p>
+                  {(selectedMuscleGroups.length > 0 || selectedWorkoutFocus.length > 0 || searchTerm) && (
+                    <button 
+                      onClick={resetFilters}
+                      className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/80 hover:bg-white/10 transition-colors mb-2"
+                    >
+                      <X className="h-4 w-4" />
+                      Clear Filters
+                    </button>
+                  )}
                   <Link href="/protected/workouts/generate">
-                    <button className="flex items-center gap-2 rounded-xl border border-white/10 bg-gradient-to-r from-fuchsia-500/20 to-cyan-400/20 px-5 py-3 text-sm font-medium text-white backdrop-blur-xl hover:bg-white/10 transition-colors">
+                    <button className="flex items-center gap-2 rounded-lg border border-white/10 bg-gradient-to-r from-fuchsia-500/20 to-cyan-400/20 px-4 py-2 text-sm font-medium text-white backdrop-blur-xl hover:bg-white/10 transition-colors">
                       <Sparkles className="h-4 w-4" />
-                      Generate Your First Workout
+                      {selectedMuscleGroups.length > 0 || selectedWorkoutFocus.length > 0 || searchTerm ? 
+                        'Generate New Workout' : 
+                        'Generate Your First Workout'}
                     </button>
                   </Link>
                 </div>
