@@ -114,10 +114,36 @@ export async function POST(request: NextRequest) {
       
       if (!result.success) {
         console.error('Failed to generate workout:', result.error);
+        
+        // Check for rate limit or quota errors in the error message
+        const errorMessage = result.error || '';
+        if (errorMessage.includes('rate limit') || 
+            errorMessage.includes('quota') || 
+            errorMessage.includes('429')) {
+          // Return a 429 status code for rate limit errors
+          return NextResponse.json({ 
+            error: `Failed to generate workout: ${result.error}`,
+            errorType: 'rate_limit'
+          }, { status: 429 });
+        }
+        
         return NextResponse.json({ error: `Failed to generate workout: ${result.error}` }, { status: 500 });
       }
     } catch (openaiError) {
       console.error('OpenAI API error:', openaiError);
+      
+      // Check for rate limit or quota errors
+      const errorMessage = openaiError instanceof Error ? openaiError.message : String(openaiError);
+      if (errorMessage.includes('rate limit') || 
+          errorMessage.includes('quota') || 
+          errorMessage.includes('429')) {
+        // Return a 429 status code for rate limit errors
+        return NextResponse.json({ 
+          error: `Failed to generate workout: ${errorMessage}`,
+          errorType: 'rate_limit'
+        }, { status: 429 });
+      }
+      
       return NextResponse.json({ 
         error: 'OpenAI API error', 
         details: openaiError instanceof Error ? openaiError.message : 'Unknown error' 
@@ -139,7 +165,7 @@ export async function POST(request: NextRequest) {
           equipment_needed: result.data!.equipment_needed,
           workout_data: result.data!,
           raw_ai_response: result.rawResponse,
-          ai_model: 'gpt-3.5-turbo',
+          ai_model: 'gpt-3.5-turbo-0125',
           prompt_tokens: result.usage?.promptTokens,
           completion_tokens: result.usage?.completionTokens,
           generation_time_ms: result.generationTimeMs,

@@ -214,8 +214,15 @@ export default function GenerateWorkoutPage() {
             status: response.status,
             statusText: response.statusText,
             error: data.error,
+            errorType: data.errorType,
             requestBody
           });
+          
+          // Handle rate limit errors specifically
+          if (response.status === 429 || data.errorType === 'rate_limit') {
+            throw new Error('API usage limit reached. Please try again later.');
+          }
+          
           throw new Error(data.error || 'Failed to generate workout');
         }
       } catch (fetchError) {
@@ -319,8 +326,16 @@ export default function GenerateWorkoutPage() {
           <div className="p-4">
             {/* Error Message */}
             {error && (
-              <div className="mb-3 p-2 rounded-lg bg-red-500/20 text-red-200 text-xs">
-                {error}
+              <div className={`mb-3 p-3 rounded-lg ${error.includes('rate limit') || error.includes('quota') || error.includes('429') ? 'bg-amber-500/20 text-amber-200' : 'bg-red-500/20 text-red-200'} text-xs`}>
+                {error.includes('rate limit') || error.includes('quota') || error.includes('429') ? (
+                  <>
+                    <h4 className="font-medium mb-1">API Usage Limit Reached</h4>
+                    <p>We've reached our daily limit for workout generation.</p>
+                    <p className="mt-1">Please try again later or contact support if this persists.</p>
+                  </>
+                ) : (
+                  error
+                )}
               </div>
             )}
 
