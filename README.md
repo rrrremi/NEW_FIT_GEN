@@ -121,11 +121,40 @@ npm run dev
 
 ## Deployment
 
-1. Set up environment variables
-2. Configure Supabase production project
-3. Run database migrations
-4. Test all features in production mode
-5. Set up error monitoring
+### Vercel Deployment
+
+1. **Set up environment variables in Vercel:**
+   - Go to your Vercel project dashboard
+   - Navigate to "Settings" > "Environment Variables"
+   - Add the following environment variables:
+     ```
+     NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+     NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+     OPENAI_API_KEY=your_openai_api_key
+     NEXT_PUBLIC_APP_URL=your_vercel_deployment_url
+     ```
+   - Make sure to set the correct environment (Production, Preview, Development)
+
+2. **Configure Supabase production project:**
+   - Set up the same tables and RLS policies as in your development environment
+   - Update authentication settings and redirect URLs
+
+3. **Deploy your application:**
+   - Connect your GitHub repository to Vercel
+   - Configure build settings
+   - Deploy the application
+
+4. **Verify environment variables:**
+   - After deployment, visit `/api/debug` endpoint to check if environment variables are correctly set
+   - Note: This endpoint only shows if variables exist, not their actual values for security reasons
+
+5. **Test all features in production mode:**
+   - Test authentication flow
+   - Verify workout generation functionality
+   - Check all protected routes
+
+6. **Set up error monitoring:**
+   - Consider adding error tracking services like Sentry
 
 ## Best Practices
 
