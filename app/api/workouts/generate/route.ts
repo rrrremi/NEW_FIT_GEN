@@ -160,11 +160,37 @@ export async function POST(request: NextRequest) {
               name: exerciseData.name,
               primary_muscles: exerciseData.primary_muscles || [],
               secondary_muscles: exerciseData.secondary_muscles,
-              equipment: exerciseData.equipment,
-              movement_type: exerciseData.movement_type
+              equipment: exerciseData.equipment
             });
             
             console.log(`${created ? 'Created' : 'Found'} exercise: ${exercise.name} (${exercise.id})`);
+            
+            // Validate and normalize reps
+            let repsValue: string | number = '1';
+            
+            // Handle different types of reps values
+            if (exerciseData.reps !== undefined && exerciseData.reps !== null) {
+              if (typeof exerciseData.reps === 'string') {
+                repsValue = exerciseData.reps || '1';
+              } else if (typeof exerciseData.reps === 'number') {
+                repsValue = exerciseData.reps.toString();
+              } else {
+                // For any other type, use a default value
+                repsValue = '1';
+              }
+            }
+            
+            // For isometric exercises like "Glute Bridge Hold", ensure reps is valid
+            if (exercise.name.toLowerCase().includes('hold') || 
+                exercise.name.toLowerCase().includes('plank') ||
+                exercise.name.toLowerCase().includes('wall sit')) {
+              // For holds, use time duration instead of reps count if not specified
+              if (!repsValue || repsValue === '0') {
+                repsValue = '30-60 seconds';
+              }
+            }
+            
+            console.log(`Exercise: ${exercise.name}, Reps: ${repsValue}`);
             
             // Link the exercise to the workout
             const workoutExercise = await linkExerciseToWorkout(
@@ -172,17 +198,17 @@ export async function POST(request: NextRequest) {
               exercise.id,
               {
                 order_index: exerciseData.order_index || index + 1,
-                sets: exerciseData.sets,
-                reps: exerciseData.reps,
-                rest_seconds: rest_seconds,
+                sets: exerciseData.sets || 3, // Default to 3 sets if not specified
+                reps: repsValue,
+                rest_seconds: rest_seconds || 60, // Default to 60 seconds if not specified
                 rationale: exerciseData.rationale
               }
             );
             
             exerciseRecords.push({
               ...exercise,
-              sets: exerciseData.sets,
-              rest_seconds: rest_seconds
+              sets: exerciseData.sets || 3, // Default to 3 sets if not specified
+              rest_seconds: rest_seconds || 60 // Default to 60 seconds if not specified
             });
           }
           
