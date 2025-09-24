@@ -160,8 +160,7 @@ export async function POST(request: NextRequest) {
               name: exerciseData.name,
               primary_muscles: exerciseData.primary_muscles || [],
               secondary_muscles: exerciseData.secondary_muscles,
-              equipment: exerciseData.equipment,
-              movement_type: exerciseData.movement_type
+              equipment: exerciseData.equipment
             });
             
             console.log(`${created ? 'Created' : 'Found'} exercise: ${exercise.name} (${exercise.id})`);
@@ -173,7 +172,7 @@ export async function POST(request: NextRequest) {
               {
                 order_index: exerciseData.order_index || index + 1,
                 sets: exerciseData.sets,
-                reps: exerciseData.reps,
+                reps: typeof exerciseData.reps === 'string' ? exerciseData.reps : exerciseData.reps?.toString() || '1',
                 rest_seconds: rest_seconds,
                 rationale: exerciseData.rationale
               }

@@ -84,7 +84,7 @@ export async function linkExerciseToWorkout(
   params: {
     order_index: number;
     sets: number;
-    reps: number;
+    reps: number | string; // Allow both numeric and text-based rep values
     rest_seconds: number;
     weight_unit?: string;
     weight_recommendation_type?: string;
