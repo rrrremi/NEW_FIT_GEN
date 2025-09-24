@@ -59,58 +59,17 @@ export function extractEquipment(exerciseName: string): string {
 }
 
 /**
- * Determine if an exercise is likely a compound or isolation movement
- * 
- * @param exerciseName The exercise name
- * @param primaryMuscles The primary muscles targeted
- * @returns 'compound', 'isolation', or undefined if can't determine
- */
-export function determineMovementType(
-  exerciseName: string, 
-  primaryMuscles: string[]
-): 'compound' | 'isolation' | undefined {
-  const lowerName = exerciseName.toLowerCase();
-  
-  // Common compound movements
-  const compoundPatterns = [
-    'squat', 'deadlift', 'press', 'row', 'pull', 'clean', 'snatch', 'jerk',
-    'thruster', 'lunge', 'push', 'bench'
-  ];
-  
-  // Common isolation movements
-  const isolationPatterns = [
-    'curl', 'extension', 'raise', 'fly', 'lateral', 'calf', 'crunch',
-    'kickback', 'pulldown', 'pullover'
-  ];
-  
-  // Check for compound patterns
-  for (const pattern of compoundPatterns) {
-    if (lowerName.includes(pattern)) {
-      return 'compound';
-    }
-  }
-  
-  // Check for isolation patterns
-  for (const pattern of isolationPatterns) {
-    if (lowerName.includes(pattern)) {
-      return 'isolation';
-    }
-  }
-  
-  // If targeting multiple muscle groups, likely compound
-  if (primaryMuscles.length > 1) {
-    return 'compound';
-  }
-  
-  // Can't determine
-  return undefined;
-}
-
-/**
  * Test if the matcher is working correctly
  */
 export function testMatcher(): void {
-  console.log('Testing exercise name matcher:');
+  console.log('Testing exercise name matcher:')
+  console.log('------------------------------')
+  console.log('"Barbell Bench Press" →', createSearchKey("Barbell Bench Press"))
+  console.log('"Bench Press Barbell" →', createSearchKey("Bench Press Barbell"))
+  console.log('"BENCH-PRESS (Barbell)" →', createSearchKey("BENCH-PRESS (Barbell)"))
+  console.log('"DB Shoulder Press" →', createSearchKey("DB Shoulder Press"))
+  console.log('------------------------------')
+
   console.log('------------------------------');
   console.log('"Barbell Bench Press" →', createSearchKey("Barbell Bench Press"));
   console.log('"Bench Press Barbell" →', createSearchKey("Bench Press Barbell"));

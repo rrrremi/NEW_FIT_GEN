@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { createSearchKey, extractEquipment, determineMovementType } from './matcher';
+import { createSearchKey, extractEquipment } from './matcher';
 
 // Define types locally to avoid circular dependencies
 interface ExerciseData {
@@ -7,7 +7,6 @@ interface ExerciseData {
   primary_muscles: string[];
   secondary_muscles?: string[];
   equipment?: string;
-  movement_type?: 'compound' | 'isolation';
 }
 
 interface ExerciseRecord extends ExerciseData {
@@ -44,10 +43,8 @@ export async function findOrCreateExercise(exerciseData: ExerciseData): Promise<
   
   // If not found (PGRST116 is the "no rows returned" error code)
   if (findError && findError.code === 'PGRST116') {
-    // Determine equipment and movement type if not provided
+    // Determine equipment if not provided
     const equipment = exerciseData.equipment || extractEquipment(exerciseData.name);
-    const movementType = exerciseData.movement_type || 
-      determineMovementType(exerciseData.name, exerciseData.primary_muscles);
     
     // Create a new exercise
     const { data: newExercise, error: createError } = await supabase
@@ -57,8 +54,7 @@ export async function findOrCreateExercise(exerciseData: ExerciseData): Promise<
         search_key: searchKey,
         primary_muscles: exerciseData.primary_muscles,
         secondary_muscles: exerciseData.secondary_muscles || [],
-        equipment,
-        movement_type: movementType
+        equipment
       })
       .select()
       .single();
