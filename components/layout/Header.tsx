@@ -25,20 +25,28 @@ export default function Header() {
   const [user, setUser] = useState<any>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const supabase = createClient()
 
   useEffect(() => {
     async function loadUser() {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      if (user) {
-        // Check admin status
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', user.id)
-          .single()
-        setIsAdmin(profile?.is_admin || false)
+      setIsLoading(true)
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        setUser(user)
+        if (user) {
+          // Check admin status
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', user.id)
+            .single()
+          setIsAdmin(profile?.is_admin || false)
+        }
+      } catch (error) {
+        console.error('Error loading user:', error)
+      } finally {
+        setIsLoading(false)
       }
     }
     loadUser()
@@ -59,7 +67,8 @@ export default function Header() {
   ]
 
   const filteredNavItems = navigationItems.filter(item =>
-    (!item.requiresAuth || user) &&
+    // During loading, only show items that don't require auth
+    (isLoading ? !item.requiresAuth : (!item.requiresAuth || user)) &&
     (!item.requiresAdmin || isAdmin) &&
     item.showAlways
   )
@@ -108,18 +117,23 @@ export default function Header() {
 
           {/* Right side - Auth/User Actions */}
           <div className="flex items-center gap-3">
-            {user ? (
+            {isLoading ? (
+              // Show a subtle loading indicator during authentication check
+              <div className="h-8 w-8 rounded-full border-2 border-white/10 border-t-white/40 animate-spin"></div>
+            ) : user ? (
               <>
                 {/* User Menu - Desktop */}
                 <div className="hidden md:flex items-center gap-2">
-                  {/* Admin Button - Always visible for quick access */}
-                  <Link
-                    href="/protected/admin"
-                    className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white/80 hover:bg-white/10 transition-colors focus-ring"
-                  >
-                    <Shield className="h-4 w-4" />
-                    <span>Admin</span>
-                  </Link>
+                  {/* Admin Button - Only visible for admins */}
+                  {isAdmin && (
+                    <Link
+                      href="/protected/admin"
+                      className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white/80 hover:bg-white/10 transition-colors focus-ring"
+                    >
+                      <Shield className="h-4 w-4" />
+                      <span>Admin</span>
+                    </Link>
+                  )}
                   
                   <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white/80">
                     <User className="h-4 w-4" />
@@ -168,7 +182,7 @@ export default function Header() {
 
         {/* Mobile Navigation Menu */}
         <AnimatePresence>
-          {isMenuOpen && user && (
+          {isMenuOpen && !isLoading && user && (
             <motion.nav
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
@@ -213,15 +227,17 @@ export default function Header() {
                   )
                 })}
 
-                {/* Admin Button - Always visible for quick access */}
-                <Link
-                  href="/protected/admin"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center gap-3 w-full rounded-xl px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors focus-ring"
-                >
-                  <Shield className="h-5 w-5" />
-                  Admin
-                </Link>
+                {/* Admin Button - Only visible for admins */}
+                {isAdmin && (
+                  <Link
+                    href="/protected/admin"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-3 w-full rounded-xl px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors focus-ring"
+                  >
+                    <Shield className="h-5 w-5" />
+                    Admin
+                  </Link>
+                )}
 
                 {/* Sign Out */}
                 <button
