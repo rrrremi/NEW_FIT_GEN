@@ -1,4 +1,4 @@
-import { createSearchKey, extractEquipment, determineMovementType } from './matcher';
+import { createSearchKey, extractEquipment } from './matcher';
 import { createClient } from '@/lib/supabase/server';
 
 export interface ExerciseData {
@@ -6,7 +6,6 @@ export interface ExerciseData {
   primary_muscles: string[];
   secondary_muscles?: string[];
   equipment?: string;
-  movement_type?: 'compound' | 'isolation';
 }
 
 /**
@@ -36,10 +35,6 @@ export async function findOrCreateExercise(exerciseData: ExerciseData) {
     // Determine equipment if not provided
     const equipment = exerciseData.equipment || extractEquipment(exerciseData.name);
     
-    // Determine movement type if not provided
-    const movement_type = exerciseData.movement_type || 
-      determineMovementType(exerciseData.name, exerciseData.primary_muscles);
-    
     const { data: newExercise, error: createError } = await supabase
       .from('exercises')
       .insert({
@@ -47,8 +42,7 @@ export async function findOrCreateExercise(exerciseData: ExerciseData) {
         search_key: searchKey,
         primary_muscles: exerciseData.primary_muscles,
         secondary_muscles: exerciseData.secondary_muscles || [],
-        equipment: equipment.toLowerCase(),
-        movement_type: movement_type
+        equipment: equipment.toLowerCase()
       })
       .select()
       .single();
